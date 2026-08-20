@@ -197,7 +197,7 @@ keyboard.destroy();
 
 ## Theming
 
-The defaults intentionally share Luach Picker's restrained shadcn-style palette. Override tokens on `.keybrew` without targeting internals:
+Keybrew ships with a restrained, neutral default palette. Override tokens on `.keybrew` without targeting internals:
 
 ```css
 .keybrew {
