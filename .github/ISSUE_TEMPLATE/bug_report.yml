@@ -1,0 +1,40 @@
+name: Bug report
+description: Report reproducible incorrect behavior in Keybrew.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please remove private data from examples before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: Keybrew version
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include HTML, initialization options, and the exact interaction sequence.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser, operating system, and device
+    validations:
+      required: true

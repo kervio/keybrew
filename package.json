@@ -1,0 +1,76 @@
+{
+  "name": "keybrew",
+  "version": "1.0.0",
+  "description": "A lightweight, dependency-free Hebrew virtual keyboard for the web.",
+  "keywords": [
+    "hebrew",
+    "keyboard",
+    "virtual-keyboard",
+    "onscreen-keyboard",
+    "accessibility",
+    "rtl"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kervio/keybrew.git"
+  },
+  "homepage": "https://github.com/kervio/keybrew#readme",
+  "bugs": {
+    "url": "https://github.com/kervio/keybrew/issues"
+  },
+  "license": "MIT",
+  "main": "keybrew.js",
+  "module": "keybrew.mjs",
+  "browser": "keybrew.js",
+  "style": "keybrew.css",
+  "unpkg": "dist/keybrew.min.js",
+  "jsdelivr": "dist/keybrew.min.js",
+  "types": "keybrew.d.ts",
+  "exports": {
+    ".": {
+      "types": "./keybrew.d.ts",
+      "import": "./keybrew.mjs",
+      "require": "./keybrew.js",
+      "default": "./keybrew.js"
+    },
+    "./keybrew.css": "./keybrew.css",
+    "./keybrew.min.js": "./dist/keybrew.min.js",
+    "./keybrew.min.css": "./dist/keybrew.min.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "keybrew.js",
+    "keybrew.mjs",
+    "keybrew.css",
+    "keybrew.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./keybrew.js",
+    "./keybrew.css",
+    "./dist/keybrew.min.js",
+    "./dist/keybrew.min.css"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/keybrew.test.js",
+    "test:browser": "node scripts/test-browser.mjs",
+    "test:package": "node scripts/test-package.mjs",
+    "check:dist": "node scripts/build.mjs --check",
+    "check:package": "node scripts/check-package.mjs",
+    "check": "node --check keybrew.js && node --check keybrew.mjs && node --check scripts/build.mjs && node --check scripts/check-package.mjs && node --check scripts/test-browser.mjs && node --check scripts/test-package.mjs && npm test && npm run check:dist && npm run check:package",
+    "validate": "npm run check && npm run test:browser && npm run test:package && npm run pack:check",
+    "pack:check": "npm pack --dry-run",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run check"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

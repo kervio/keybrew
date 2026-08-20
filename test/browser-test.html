@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script>
+    var testBuild = new URLSearchParams(location.search).get("build") || "source";
+    var testCss = testBuild === "minified" ? "../dist/keybrew.min.css" : "../keybrew.css";
+    document.write('<link rel="stylesheet" href="' + testCss + '">');
+  </script>
+  <title>Keybrew browser tests</title>
+</head>
+<body>
+  <input id="first" maxlength="20" style="width: 500px">
+  <input id="second" value="שלום">
+  <input id="readonly" readonly>
+  <input id="disabled" disabled>
+  <input id="restore-field" inputmode="text" dir="ltr" aria-controls="original-controls" aria-expanded="true" aria-haspopup="listbox">
+  <input id="manual-field">
+  <button id="manual-trigger" type="button">Open keyboard</button>
+  <div id="slot"></div>
+  <div id="observer-host"></div>
+  <pre id="result">RUNNING</pre>
+
+  <script>
+    var testScript = testBuild === "minified" ? "../dist/keybrew.min.js" : "../keybrew.js";
+    document.write('<script src="' + testScript + '"><\/script>');
+  </script>
+  <script>
+    (async function () {
+      "use strict";
+
+      var result = document.getElementById("result");
+      var first = document.getElementById("first");
+      var second = document.getElementById("second");
+      var readonly = document.getElementById("readonly");
+      var disabled = document.getElementById("disabled");
+      var inputEvents = 0;
+      var customEvents = 0;
+      var callbackInputs = 0;
+      var callbackKeys = 0;
+      var callbackLayouts = 0;
+      var openEvents = 0;
+      var closeEvents = 0;
+
+      function assert(condition, message) {
+        if (!condition) throw new Error(message);
+      }
+
+      function key(root, value) {
+        var button = root.querySelector('button[data-key="' + CSS.escape(value) + '"]');
+        assert(button, "Missing key: " + value);
+        button.click();
+        return button;
+      }
+
+      first.addEventListener("input", function () { inputEvents += 1; });
+      first.addEventListener("keybrew:input", function () { customEvents += 1; });
+      first.addEventListener("keybrew:open", function () { openEvents += 1; });
+      first.addEventListener("keybrew:close", function () { closeEvents += 1; });
+
+      try {
+        var keyboard = new Keybrew([first, second], {
+          includeNiqqud: true,
+          includeNumbers: true,
+          includeSymbols: true,
+          scrollBehavior: "auto",
+          onInput: function () { callbackInputs += 1; },
+          onKeyPress: function () { callbackKeys += 1; },
+          onLayoutChange: function () { callbackLayouts += 1; }
+        });
+
+        assert(first.getAttribute("inputmode") === "none", "Native keyboard was not suppressed");
+        assert(first.dir === "rtl", "RTL direction was not applied");
+        keyboard.setOptions({ setDirection: false });
+        assert(!first.hasAttribute("dir"), "RTL direction was not optional");
+        keyboard.setOptions({ setDirection: true });
+        assert(first.dir === "rtl", "RTL direction was not reapplied");
+        keyboard.setOptions({ enabledOn: "mobile", deviceMatcher: function () { return false; } });
+        assert(!first.hasAttribute("inputmode"), "Disabled device retained input suppression");
+        assert(!first.hasAttribute("aria-controls"), "Disabled device retained popup ARIA");
+        keyboard.setOptions({ enabledOn: "both", deviceMatcher: null });
+        assert(first.getAttribute("inputmode") === "none", "Input suppression was not restored");
+        assert(first.getAttribute("aria-controls") === keyboard.id, "Popup ARIA was not restored");
+        assert(keyboard.open(first), "First input did not open");
+        assert(first.getAttribute("aria-expanded") === "true", "Expanded state was not exposed");
+        assert(!keyboard.root.hidden, "Keyboard remained hidden");
+        assert(openEvents === 1, "Open custom event did not fire once");
+        assert(keyboard.root.getAttribute("role") === "dialog", "Keyboard dialog role is missing");
+        assert(keyboard.root.getAttribute("aria-label") === "Hebrew keyboard", "Keyboard accessible name is missing");
+        var renderedButtons = Array.from(keyboard.root.querySelectorAll("button[data-key]"));
+        assert(renderedButtons.length > 30, "Optional panels did not expose their controls");
+        assert(renderedButtons.every(function (button) {
+          return button.type === "button" && Boolean(button.getAttribute("aria-label"));
+        }), "A keyboard control is missing native button semantics or an accessible name");
+        assert(keyboard.options.align === "center", "Floating alignment did not default to center");
+        assert(keyboard.root.querySelector('[data-key="' + Keybrew.keys.BACKSPACE + '"]').textContent === "⌦", "Backspace icon points the wrong way");
+        var firstKey = keyboard.root.querySelector('.keybrew__row .keybrew__key[data-key="ק"]');
+        var secondKey = keyboard.root.querySelector('.keybrew__row .keybrew__key[data-key="ר"]');
+        assert(firstKey.getBoundingClientRect().left < secondKey.getBoundingClientRect().left, "Key rows render backwards");
+        keyboard._position();
+        assert(keyboard.root.getAttribute("data-placement") === "below", "Automatic placement did not prefer below when space was available");
+
+        keyboard.setOptions({ align: "left" });
+        keyboard._position();
+        var leftAligned = parseFloat(keyboard.root.style.left);
+        keyboard.setOptions({ align: "center" });
+        keyboard._position();
+        var centerAligned = parseFloat(keyboard.root.style.left);
+        keyboard.setOptions({ align: "right" });
+        keyboard._position();
+        var rightAligned = parseFloat(keyboard.root.style.left);
+        assert(leftAligned < centerAligned && centerAligned < rightAligned, "Floating alignments were not applied");
+        keyboard.setOptions({ align: "center" });
+        keyboard.attach(first);
+        assert(keyboard.inputs.size === 2, "Duplicate attachment changed the input set");
+
+        first.value = "אב";
+        first.setSelectionRange(1, 1);
+        key(keyboard.root, "ג");
+        assert(first.value === "אגב", "Text was not inserted at the caret");
+        assert(first.selectionStart === 2, "Caret was not advanced");
+        assert(inputEvents === 1 && customEvents === 1, "Input events were not emitted once");
+        assert(callbackInputs === 1 && callbackKeys === 1, "Input or keypress callback did not fire once");
+
+        first.setSelectionRange(0, 2);
+        key(keyboard.root, "ד");
+        assert(first.value === "דב", "Selection was not replaced");
+        first.setSelectionRange(0, 1);
+        key(keyboard.root, Keybrew.keys.BACKSPACE);
+        assert(first.value === "ב", "Backspace did not delete the selection");
+
+        first.setSelectionRange(0, 0);
+        key(keyboard.root, Keybrew.keys.BACKSPACE);
+        assert(first.value === "ב", "Backspace changed text at the start of the field");
+
+        first.maxLength = 1;
+        first.setSelectionRange(first.value.length, first.value.length);
+        key(keyboard.root, "ג");
+        assert(first.value === "ב", "maxlength was not respected");
+        first.maxLength = 20;
+
+        var cancelZayin = function (event) {
+          if (event.data === "ז") event.preventDefault();
+        };
+        first.addEventListener("beforeinput", cancelZayin);
+        key(keyboard.root, "ז");
+        first.removeEventListener("beforeinput", cancelZayin);
+        assert(first.value === "ב", "Canceled beforeinput still changed the field");
+
+        key(keyboard.root, Keybrew.keys.NIQQUD);
+        assert(keyboard.root.querySelector('[data-key="' + Keybrew.keys.NIQQUD + '"]').getAttribute("aria-pressed") === "true", "Niqqud panel did not activate");
+        first.setSelectionRange(first.value.length, first.value.length);
+        key(keyboard.root, "\u05b0");
+        assert(first.value === "ב\u05b0", "Niqqud was not inserted");
+        key(keyboard.root, Keybrew.keys.NUMBERS);
+        assert(keyboard.root.querySelector('[data-key="1"]'), "Number panel did not render");
+        key(keyboard.root, "1");
+        key(keyboard.root, Keybrew.keys.SYMBOLS);
+        assert(keyboard.root.querySelector('[data-key="₪"]'), "Symbol panel did not render");
+        key(keyboard.root, "₪");
+        assert(first.value.endsWith("1₪"), "Number or symbol input was not inserted");
+        assert(callbackLayouts === 3, "Layout-change callback count is incorrect");
+
+        var nativeInputCallbacks = callbackInputs;
+        first.value += "ט";
+        first.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ט", inputType: "insertText" }));
+        assert(callbackInputs === nativeInputCallbacks + 1, "Physical/native input did not reach onInput");
+
+        assert(keyboard.open(second), "Second input did not open");
+        assert(first.getAttribute("aria-expanded") === "false", "First input stayed expanded");
+        assert(second.getAttribute("aria-expanded") === "true", "Second input did not expand");
+        assert(keyboard.getActiveInput() === second, "Shared keyboard did not switch inputs");
+        assert(closeEvents === 1, "Switching inputs did not emit close on the first field");
+        assert(!keyboard.open(readonly), "Readonly input opened the keyboard");
+        assert(!keyboard.open(disabled), "Disabled input opened the keyboard");
+
+        second.style.position = "fixed";
+        second.style.left = "120px";
+        second.style.bottom = "4px";
+        keyboard._position();
+        assert(keyboard.root.getAttribute("data-placement") === "above", "Automatic placement did not flip above near the viewport edge");
+        second.removeAttribute("style");
+
+        document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+        assert(!keyboard.isOpen(), "Outside pointer interaction did not close the keyboard");
+        assert(keyboard.open(second), "Keyboard did not reopen after outside dismissal");
+
+        keyboard.setOptions({ position: "inline", inlineContainer: "#slot" });
+        keyboard.open(second);
+        assert(keyboard.root.parentElement.id === "slot", "Inline keyboard missed its container");
+        assert(keyboard.root.classList.contains("keybrew--inline"), "Inline class was not applied");
+
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        assert(!keyboard.isOpen() && keyboard.root.hidden, "Escape did not close the keyboard");
+
+        keyboard.destroy();
+        assert(!first.hasAttribute("inputmode"), "Inputmode was not restored");
+        assert(!first.hasAttribute("dir"), "Direction was not restored");
+        assert(!first.hasAttribute("aria-controls"), "ARIA controls was not restored");
+        assert(!document.getElementById(keyboard.id), "Keyboard DOM was not removed");
+
+        var manualField = document.getElementById("manual-field");
+        var manualTrigger = document.getElementById("manual-trigger");
+        var manualOpens = 0;
+        var manualCloses = 0;
+        var manual = new Keybrew(manualField, {
+          openOn: "manual",
+          suppressNativeKeyboard: "while-open",
+          onOpen: function () { manualOpens += 1; },
+          onClose: function () { manualCloses += 1; }
+        });
+
+        manualField.focus();
+        manualField.click();
+        assert(!manual.isOpen(), "Manual keyboard opened from field focus or click");
+        assert(!manualField.hasAttribute("inputmode"), "Manual field suppressed native input while closed");
+
+        manualTrigger.focus();
+        manual.open(manualField);
+        assert(manual.isOpen(), "Manual open did not show the keyboard");
+        assert(manualField.getAttribute("inputmode") === "none", "While-open suppression was not applied");
+        assert(manualOpens === 1, "Manual open callback did not fire once");
+        key(manual.root, "ש");
+        assert(manualField.value === "ש", "Manual keyboard did not edit its target field");
+
+        manual.toggle(manualField);
+        assert(!manualField.hasAttribute("inputmode"), "While-open suppression was not restored on close");
+        assert(document.activeElement === manualTrigger, "Focus did not return to the manual trigger");
+        assert(manualCloses === 1, "Manual close callback did not fire once");
+
+        manual.setOptions({ openOn: "focus", suppressNativeKeyboard: false });
+        manualField.focus();
+        assert(manual.isOpen(), "Focus activation was not restored through setOptions");
+        manual.destroy();
+
+        var restoreField = document.getElementById("restore-field");
+        var restoreKeyboard = new Keybrew(restoreField);
+        assert(restoreField.getAttribute("inputmode") === "none", "Restore fixture was not attached");
+        assert(restoreField.getAttribute("dir") === "ltr", "An explicit field direction was overwritten");
+        restoreKeyboard.destroy();
+        assert(restoreField.getAttribute("inputmode") === "text", "Original inputmode was not restored exactly");
+        assert(restoreField.getAttribute("dir") === "ltr", "Original direction was not restored exactly");
+        assert(restoreField.getAttribute("aria-controls") === "original-controls", "Original aria-controls was not restored");
+        assert(restoreField.getAttribute("aria-expanded") === "true", "Original aria-expanded was not restored");
+        assert(restoreField.getAttribute("aria-haspopup") === "listbox", "Original aria-haspopup was not restored");
+
+        var observed = new Keybrew(".observed-keybrew", {
+          observe: true,
+          suppressNativeKeyboard: false
+        });
+        var dynamicInput = document.createElement("input");
+        dynamicInput.className = "observed-keybrew";
+        document.getElementById("observer-host").appendChild(dynamicInput);
+        await new Promise(function (resolve) { setTimeout(resolve, 0); });
+        assert(observed.inputs.has(dynamicInput), "Mutation observer did not attach a dynamic field");
+        assert(dynamicInput.getAttribute("aria-controls") === observed.id, "Dynamic field did not receive popup semantics");
+        dynamicInput.remove();
+        await new Promise(function (resolve) { setTimeout(resolve, 0); });
+        assert(!observed.inputs.has(dynamicInput), "Removed dynamic field remained attached");
+        observed.destroy();
+
+        document.body.setAttribute("data-test-status", "pass");
+        document.body.setAttribute("data-test-build", testBuild);
+        result.textContent = "PASS";
+      } catch (error) {
+        document.body.setAttribute("data-test-status", "fail");
+        result.textContent = "FAIL: " + error.message + "\n" + error.stack;
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keybrew demo</title>
+  <link rel="stylesheet" href="../keybrew.css">
+  <link rel="stylesheet" href="demo.css">
+</head>
+<body>
+  <main class="demo-shell">
+    <header class="hero">
+      <span class="eyebrow">Dependency-free Hebrew input</span>
+      <h1>Keybrew</h1>
+      <p>A small virtual keyboard with careful positioning, native form events, and accessible controls.</p>
+    </header>
+
+    <section class="card" aria-labelledby="floating-title">
+      <div class="card-heading">
+        <div>
+          <h2 id="floating-title">Floating keyboard</h2>
+          <p>Use the icon for optional Keybrew input, or focus the note for automatic opening.</p>
+        </div>
+        <span class="badge">Default</span>
+      </div>
+
+      <div class="field">
+        <label for="hebrew-name">Hebrew name</label>
+        <div class="input-action" dir="rtl">
+          <input id="hebrew-name" placeholder="הקלידו שם" autocomplete="off">
+          <button
+            id="hebrew-keyboard-trigger"
+            class="keyboard-trigger"
+            type="button"
+            aria-label="Open Hebrew keyboard"
+            aria-expanded="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+              <path d="M7 9h.01M10.5 9h.01M14 9h.01M17.5 9h.01M7 12.5h.01M10.5 12.5h.01M14 12.5h.01M17.5 12.5h.01M8 16h8"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="hebrew-note">Short note</label>
+        <textarea id="hebrew-note" data-keybrew rows="3" maxlength="80" placeholder="הקלידו הערה"></textarea>
+        <small>Maximum 80 characters</small>
+      </div>
+
+      <fieldset class="options">
+        <legend>Enabled panels</legend>
+        <label><input id="with-niqqud" type="checkbox" checked> Niqqud</label>
+        <label><input id="with-numbers" type="checkbox" checked> Numbers</label>
+        <label><input id="with-symbols" type="checkbox" checked> Symbols</label>
+      </fieldset>
+    </section>
+
+    <div class="breathing-room" aria-hidden="true"></div>
+
+    <section class="card" aria-labelledby="inline-title">
+      <div class="card-heading">
+        <div>
+          <h2 id="inline-title">Inline keyboard</h2>
+          <p>This instance stays inside its assigned slot.</p>
+        </div>
+        <span class="badge badge--muted">Optional</span>
+      </div>
+      <div class="field">
+        <label for="inline-hebrew">Hebrew title</label>
+        <input id="inline-hebrew" placeholder="כותרת בעברית" autocomplete="off">
+      </div>
+      <div id="inline-keyboard"></div>
+    </section>
+
+    <p id="event-log" class="event-log" aria-live="polite">Ready.</p>
+  </main>
+
+  <script src="../keybrew.js"></script>
+  <script src="demo.js"></script>
+</body>
+</html>
