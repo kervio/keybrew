@@ -12,4 +12,4 @@ All notable changes to Keybrew will be documented here. This project follows Sem
 - Optional niqqud, number, and symbol panels.
 - Manual icon-trigger activation and while-open native-keyboard suppression.
 - Accessible controls, lifecycle callbacks, and bubbling custom events.
-- CommonJS, ES module, browser-global, CSS, and TypeScript entry points.
+- CommonJS, ES module, browser-global, and CSS entry points.

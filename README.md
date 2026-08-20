@@ -27,7 +27,6 @@ The defaults are a floating keyboard, automatic above/below placement, gentle sc
 - `keybrew.js` and `keybrew.css`: readable browser files.
 - `dist/keybrew.min.js` and `dist/keybrew.min.css`: minified production/CDN files.
 - `keybrew.mjs`: ES module wrapper.
-- `keybrew.d.ts`: TypeScript declarations.
 
 The minified files are committed for direct browser use and are reproducibly generated with `npm run build`. Package consumers still receive zero runtime dependencies; esbuild is development-only.
 
@@ -97,7 +96,7 @@ trigger.setAttribute("aria-controls", keyboard.id);
 trigger.addEventListener("click", () => keyboard.toggle(input));
 ```
 
-With this combination, focusing the field normally does not open Keybrew. Clicking the trigger opens it and temporarily applies `inputmode="none"`; closing restores the field's original input mode. Escape and Keybrew's close button return focus to the trigger when it initiated the open.
+With this combination, focusing the field normally does not open Keybrew. Clicking the trigger opens it and temporarily applies `inputmode="none"`; closing restores the field's original input mode. Escape and the optional close button return focus to the trigger when it initiated the open.
 
 Inline after the active field:
 
@@ -145,8 +144,10 @@ keyboard.attach(document.querySelector("#modal-hebrew-name"));
 | `scrollBehavior` | `"smooth"` | `"smooth"` or `"auto"`; reduced-motion preferences always use auto. |
 | `setDirection` | `true` | Adds `dir="rtl"` only when the field has no explicit direction. |
 | `includeNiqqud` | `false` | Enables the compact niqqud panel. |
-| `includeNumbers` | `false` | Enables the number panel. |
+| `includeNumbers` | `false` | Enables numbers. |
+| `numbersPlacement` | `"panel"` | Uses a separate `"panel"` or keeps digits visible in a `"top-row"`. |
 | `includeSymbols` | `false` | Enables the symbol panel. |
+| `showCloseButton` | `false` | Adds an × button. With top-row numbers, it shares the number row. |
 | `observe` | `false` | Attaches matching fields added to the DOM later. |
 | `inlineContainer` | `null` | Element, selector, or callback returning an inline host. |
 | `deviceMatcher` | built in | Callback returning `true` for mobile; useful for kiosks or hybrid hardware. |
@@ -193,6 +194,16 @@ keyboard.isOpen();
 keyboard.destroy();
 ```
 
+Keep a number row above the Hebrew keys and optionally include a close button:
+
+```js
+keyboard.setOptions({
+  includeNumbers: true,
+  numbersPlacement: "top-row",
+  showCloseButton: true
+});
+```
+
 `destroy()` removes all listeners, removes the keyboard, and restores the original `inputmode`, `dir`, and ARIA attributes on every attached field.
 
 ## Theming
@@ -222,7 +233,7 @@ Keybrew ships with a restrained, neutral default palette. Override tokens on `.k
 
 - Every key is a native `button` with an accessible name.
 - Attached fields expose `aria-haspopup`, `aria-controls`, and `aria-expanded`.
-- Escape closes the keyboard, while the close control returns focus to the field.
+- Escape closes the keyboard. When enabled, the close control also returns focus to the field.
 - Tab reaches every control; arrow keys move through rows; Home and End move within a row.
 - Focus indicators, forced-color mode, touch target sizing, and reduced-motion preferences are supported.
 - The keyboard never inserts invisible bidi control characters into submitted values.

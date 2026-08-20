@@ -25,10 +25,8 @@
   "style": "keybrew.css",
   "unpkg": "dist/keybrew.min.js",
   "jsdelivr": "dist/keybrew.min.js",
-  "types": "keybrew.d.ts",
   "exports": {
     ".": {
-      "types": "./keybrew.d.ts",
       "import": "./keybrew.mjs",
       "require": "./keybrew.js",
       "default": "./keybrew.js"
@@ -44,7 +42,6 @@
     "keybrew.js",
     "keybrew.mjs",
     "keybrew.css",
-    "keybrew.d.ts",
     "README.md",
     "LICENSE"
   ],

@@ -87,6 +87,11 @@
         assert(openEvents === 1, "Open custom event did not fire once");
         assert(keyboard.root.getAttribute("role") === "dialog", "Keyboard dialog role is missing");
         assert(keyboard.root.getAttribute("aria-label") === "Hebrew keyboard", "Keyboard accessible name is missing");
+        assert(!keyboard.root.querySelector(".keybrew__header"), "A visible keyboard header was rendered");
+        assert(!keyboard.root.querySelector(".keybrew__title"), "A visible keyboard title was rendered");
+        assert(keyboard.options.showCloseButton === false, "Close button did not default to disabled");
+        assert(keyboard.options.numbersPlacement === "panel", "Numbers did not default to panel placement");
+        assert(!keyboard.root.querySelector('[data-key="' + Keybrew.keys.CLOSE + '"]'), "Close button rendered by default");
         var renderedButtons = Array.from(keyboard.root.querySelectorAll("button[data-key]"));
         assert(renderedButtons.length > 30, "Optional panels did not expose their controls");
         assert(renderedButtons.every(function (button) {
@@ -97,6 +102,23 @@
         var firstKey = keyboard.root.querySelector('.keybrew__row .keybrew__key[data-key="ק"]');
         var secondKey = keyboard.root.querySelector('.keybrew__row .keybrew__key[data-key="ר"]');
         assert(firstKey.getBoundingClientRect().left < secondKey.getBoundingClientRect().left, "Key rows render backwards");
+
+        keyboard.setOptions({ showCloseButton: true });
+        var standaloneClose = keyboard.root.querySelector('[data-key="' + Keybrew.keys.CLOSE + '"]');
+        assert(standaloneClose && standaloneClose.parentElement.classList.contains("keybrew__row--utility"), "Standalone close row did not render");
+        keyboard.setOptions({ numbersPlacement: "top-row" });
+        var topRow = keyboard.root.querySelector(".keybrew__row--top");
+        assert(topRow, "Top number row did not render");
+        assert(topRow.querySelectorAll('[data-key="1"], [data-key="2"], [data-key="3"], [data-key="4"], [data-key="5"], [data-key="6"], [data-key="7"], [data-key="8"], [data-key="9"], [data-key="0"]').length === 10, "Top number row is incomplete");
+        assert(topRow.contains(keyboard.root.querySelector('[data-key="' + Keybrew.keys.CLOSE + '"]')), "Close button did not share the top number row");
+        assert(!keyboard.root.querySelector('[data-key="' + Keybrew.keys.NUMBERS + '"]'), "Number panel tab remained in top-row mode");
+        keyboard.setOptions({ showCloseButton: false });
+        assert(!keyboard.root.querySelector('[data-key="' + Keybrew.keys.CLOSE + '"]'), "Close button was not removed through setOptions");
+        assert(keyboard.root.querySelector(".keybrew__row--top"), "Disabling close removed the top number row");
+        keyboard.setOptions({ numbersPlacement: "panel" });
+        assert(!keyboard.root.querySelector(".keybrew__row--top"), "Top number row remained in panel mode");
+        assert(keyboard.root.querySelector('[data-key="' + Keybrew.keys.NUMBERS + '"]'), "Number panel tab was not restored");
+
         keyboard._position();
         assert(keyboard.root.getAttribute("data-placement") === "below", "Automatic placement did not prefer below when space was available");
 

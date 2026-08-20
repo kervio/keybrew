@@ -23,7 +23,6 @@ const requiredFiles = [
   "dist/keybrew.min.css",
   "keybrew.js",
   "keybrew.css",
-  "keybrew.d.ts",
   "LICENSE",
   "README.md"
 ];

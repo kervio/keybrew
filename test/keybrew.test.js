@@ -72,6 +72,14 @@ test("validates public enum options before touching the DOM", () => {
     () => new Keybrew([], { suppressNativeKeyboard: "sometimes" }),
     /suppressNativeKeyboard must be/
   );
+  assert.throws(
+    () => new Keybrew([], { numbersPlacement: "footer" }),
+    /numbersPlacement must be one of/
+  );
+  assert.throws(
+    () => new Keybrew([], { showCloseButton: "yes" }),
+    /showCloseButton must be true or false/
+  );
 });
 
 test("ES module wrapper exposes Keybrew", async () => {

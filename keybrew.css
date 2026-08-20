@@ -67,25 +67,6 @@
   animation: keybrew-open-above 160ms var(--keybrew-ease) both;
 }
 
-.keybrew__header {
-  display: flex;
-  min-height: 30px;
-  margin-block-end: 7px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.keybrew__title {
-  padding-inline-start: 4px;
-  color: var(--keybrew-muted-text);
-  font-family: "Arial Hebrew", Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-}
-
-.keybrew button.keybrew__close,
 .keybrew button.keybrew__key {
   min-width: 0;
   margin: 0;
@@ -106,22 +87,6 @@
     transform 80ms var(--keybrew-ease);
 }
 
-.keybrew button.keybrew__close {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  flex: 0 0 30px;
-  place-items: center;
-  border-color: transparent;
-  border-radius: 999px;
-  background: transparent;
-  box-shadow: none;
-  color: var(--keybrew-muted-text);
-  font-size: 21px;
-  line-height: 1;
-}
-
 .keybrew__grid {
   display: grid;
   gap: var(--keybrew-gap);
@@ -132,6 +97,10 @@
   min-width: 0;
   gap: var(--keybrew-gap);
   direction: ltr;
+}
+
+.keybrew__row--utility {
+  justify-content: flex-end;
 }
 
 .keybrew button.keybrew__key {
@@ -161,6 +130,14 @@
   font-size: 21px;
 }
 
+.keybrew button.keybrew__key--close {
+  min-height: var(--keybrew-key-height);
+  flex: 0 0 var(--keybrew-key-height);
+  color: var(--keybrew-muted-text);
+  font-family: inherit;
+  font-size: 21px;
+}
+
 .keybrew button.keybrew__key--mode {
   flex-grow: 1.2;
   color: var(--keybrew-muted-text);
@@ -177,7 +154,6 @@
 }
 
 @media (hover: hover) {
-  .keybrew button.keybrew__close:hover,
   .keybrew button.keybrew__key:hover {
     border-color: color-mix(in srgb, var(--keybrew-text) 22%, var(--keybrew-border));
     background: var(--keybrew-surface-muted);
@@ -189,12 +165,10 @@
   }
 }
 
-.keybrew button.keybrew__close:active,
 .keybrew button.keybrew__key:active {
   transform: translateY(1px) scale(0.98);
 }
 
-.keybrew button.keybrew__close:focus-visible,
 .keybrew button.keybrew__key:focus-visible {
   outline: 2px solid var(--keybrew-primary-dark);
   outline-offset: 2px;
@@ -253,7 +227,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .keybrew--floating[data-open],
-  .keybrew button.keybrew__close,
   .keybrew button.keybrew__key {
     animation: none;
     transition: none;
@@ -262,7 +235,6 @@
 
 @media (forced-colors: active) {
   .keybrew,
-  .keybrew button.keybrew__close,
   .keybrew button.keybrew__key {
     border-color: ButtonBorder;
   }

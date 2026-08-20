@@ -97,7 +97,6 @@
 
   var DEFAULT_LABELS = Object.freeze({
     keyboard: "Hebrew keyboard",
-    title: "עברית",
     close: "Close Hebrew keyboard",
     backspace: "Backspace",
     space: "Space",
@@ -125,7 +124,9 @@
     setDirection: true,
     includeNiqqud: false,
     includeNumbers: false,
+    numbersPlacement: "panel",
     includeSymbols: false,
+    showCloseButton: false,
     observe: false,
     inlineContainer: null,
     deviceMatcher: null,
@@ -284,6 +285,10 @@
     assertOption(this.options.placement, ["auto", "below", "above"], "placement");
     assertOption(this.options.align, ["left", "center", "right"], "align");
     assertOption(this.options.scrollBehavior, ["auto", "smooth"], "scrollBehavior");
+    assertOption(this.options.numbersPlacement, ["panel", "top-row"], "numbersPlacement");
+    if (typeof this.options.showCloseButton !== "boolean") {
+      throw new TypeError("Keybrew: showCloseButton must be true or false.");
+    }
     if (typeof this.options.suppressNativeKeyboard !== "boolean" && this.options.suppressNativeKeyboard !== "while-open") {
       throw new TypeError('Keybrew: suppressNativeKeyboard must be true, false, or "while-open".');
     }
@@ -300,21 +305,6 @@
     root.setAttribute("aria-label", this.options.labels.keyboard);
     root.setAttribute("data-keybrew-root", "");
 
-    var header = doc.createElement("div");
-    header.className = "keybrew__header";
-
-    var title = doc.createElement("span");
-    title.className = "keybrew__title";
-    title.lang = "he";
-    title.textContent = this.options.labels.title;
-
-    var close = doc.createElement("button");
-    close.type = "button";
-    close.className = "keybrew__close";
-    close.setAttribute("data-key", KEYS.CLOSE);
-    close.setAttribute("aria-label", this.options.labels.close);
-    close.textContent = "×";
-
     var grid = doc.createElement("div");
     grid.className = "keybrew__grid";
     grid.setAttribute("role", "group");
@@ -325,15 +315,10 @@
     live.setAttribute("aria-live", "polite");
     live.setAttribute("aria-atomic", "true");
 
-    header.appendChild(title);
-    header.appendChild(close);
-    root.appendChild(header);
     root.appendChild(grid);
     root.appendChild(live);
 
     this.root = root;
-    this._title = title;
-    this._closeButton = close;
     this._grid = grid;
     this._live = live;
 
@@ -639,8 +624,6 @@
     this._validateOptions();
     this.root.setAttribute("aria-label", this.options.labels.keyboard);
     this._grid.setAttribute("aria-label", this.options.labels.keyboard);
-    this._title.textContent = this.options.labels.title;
-    this._closeButton.setAttribute("aria-label", this.options.labels.close);
     this._syncInputAttributes();
     this._configureObserver();
     if (this._isOpen) {
@@ -672,17 +655,18 @@
 
   Keybrew.prototype._modeEnabled = function (mode) {
     if (mode === "niqqud") return this.options.includeNiqqud;
-    if (mode === "numbers") return this.options.includeNumbers;
+    if (mode === "numbers") return this.options.includeNumbers && this.options.numbersPlacement === "panel";
     if (mode === "symbols") return this.options.includeSymbols;
     return true;
   };
 
   Keybrew.prototype._controlKeys = function () {
     var controls = [];
-    var hasPanels = this.options.includeNiqqud || this.options.includeNumbers || this.options.includeSymbols;
+    var numberPanel = this.options.includeNumbers && this.options.numbersPlacement === "panel";
+    var hasPanels = this.options.includeNiqqud || numberPanel || this.options.includeSymbols;
     if (hasPanels) controls.push(KEYS.HEBREW);
     if (this.options.includeNiqqud) controls.push(KEYS.NIQQUD);
-    if (this.options.includeNumbers) controls.push(KEYS.NUMBERS);
+    if (numberPanel) controls.push(KEYS.NUMBERS);
     if (this.options.includeSymbols) controls.push(KEYS.SYMBOLS);
     controls.push(KEYS.SPACE, KEYS.BACKSPACE);
     return controls;
@@ -690,17 +674,46 @@
 
   Keybrew.prototype._render = function () {
     var self = this;
-    var rows = modeRows(this._mode).map(function (row) { return row.slice(); });
-    rows.push(this._controlKeys());
+    var rows = [];
+    var numberTopRow = this.options.includeNumbers && this.options.numbersPlacement === "top-row";
+
+    if (numberTopRow) {
+      var topKeys = NUMBER_ROWS[0].slice();
+      if (this.options.showCloseButton) topKeys.push(KEYS.CLOSE);
+      rows.push({
+        keys: topKeys,
+        label: this.options.labels.numbers,
+        className: "keybrew__row--top"
+      });
+    } else if (this.options.showCloseButton) {
+      rows.push({
+        keys: [KEYS.CLOSE],
+        label: this.options.labels.close,
+        className: "keybrew__row--utility"
+      });
+    }
+
+    modeRows(this._mode).forEach(function (row) {
+      rows.push({
+        keys: row.slice(),
+        label: self._modeLabel(self._mode),
+        className: ""
+      });
+    });
+    rows.push({
+      keys: this._controlKeys(),
+      label: "Keyboard controls",
+      className: "keybrew__row--controls"
+    });
     this._grid.textContent = "";
 
-    rows.forEach(function (keys, rowIndex) {
+    rows.forEach(function (definition, rowIndex) {
       var row = self.document.createElement("div");
-      row.className = "keybrew__row";
+      row.className = "keybrew__row" + (definition.className ? " " + definition.className : "");
       row.setAttribute("role", "group");
-      row.setAttribute("aria-label", rowIndex === rows.length - 1 ? "Keyboard controls" : self._modeLabel(self._mode));
+      row.setAttribute("aria-label", definition.label);
 
-      keys.forEach(function (key, columnIndex) {
+      definition.keys.forEach(function (key, columnIndex) {
         var button = self.document.createElement("button");
         var isAction = key.charAt(0) === "{";
         button.type = "button";
@@ -714,6 +727,7 @@
         if (!isAction && (HEBREW_KEY_NAMES[key] || NIQQUD_KEY_NAMES[key])) button.lang = "he";
         if (key === KEYS.SPACE) button.classList.add("keybrew__key--space");
         if (key === KEYS.BACKSPACE) button.classList.add("keybrew__key--backspace");
+        if (key === KEYS.CLOSE) button.classList.add("keybrew__key--close");
         if ([KEYS.HEBREW, KEYS.NIQQUD, KEYS.NUMBERS, KEYS.SYMBOLS].indexOf(key) !== -1) {
           button.classList.add("keybrew__key--mode");
           button.setAttribute("aria-pressed", String(key === "{" + self._mode + "}"));
